@@ -2,13 +2,6 @@
 
 > A modern, full-stack news aggregation platform with AI-powered fake news detection, sentiment analysis, and personalized content delivery.
 
-[![CI/CD Pipeline](https://github.com/your-username/personalized-news-aggregator/workflows/CI-CD/badge.svg)](https://github.com/your-username/personalized-news-aggregator/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
-
-## 🚀 Features
 
 ### 🔥 Core Features
 - **🤖 AI-Powered Content Analysis**
@@ -67,82 +60,13 @@
 
 ### ML/AI Services
 - **Fake News Detection**: Custom Node.js service with ml-logistic-regression
-- **Text Processing**: Natural.js for NLP
-- **Model Training**: Python scripts for data preprocessing
 
 ### DevOps & Infrastructure
 - **Containerization**: Docker with multi-stage builds
 - **Orchestration**: Docker Compose
 - **CI/CD**: GitHub Actions with comprehensive pipeline
 - **Testing**: Jest + Supertest
-- **Monitoring**: Custom health checks
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 20+
-- Docker & Docker Compose
-- MongoDB (local or cloud)
-- Redis instance
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/your-username/personalized-news-aggregator.git
-cd personalized-news-aggregator
-```
-
-### 2. Environment Setup
-Create `.env` files in both `server` and `client` directories:
-
-**Server `.env`:**
-```env
-NODE_ENV=development
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/news-aggregator
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-super-secret-jwt-key
-
-# API Keys
-NEWSAPI_KEY=your-newsapi-key
-GNEWS_KEY=your-gnews-key
-GUARDIAN_KEY=your-guardian-api-key
-MEDIASTACK_KEY=your-mediastack-key
-NEWSDATA_KEY=your-newsdata-key
-
-# Email Configuration
-SENDGRID_API_KEY=your-sendgrid-key
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-```
-
-**Client `.env.local`:**
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1/
-```
-
-### 3. Docker Setup (Recommended)
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
-
-### 4. Manual Setup
-```bash
-# Install dependencies
-cd server && npm install
-cd ../client && npm install
-
-# Start services in separate terminals
-cd server && npm run dev
-cd client && npm run dev
-```
-
-### 5. Access the Application
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000/api/v1
-- **ML Service**: http://localhost:3001
 
 ## 📖 Usage Guide
 
@@ -169,31 +93,6 @@ cd client && npm run dev
 - **Bookmarks**: Save articles for later reading
 - **Responsive Design**: Works seamlessly on all devices
 
-## 🛠️ Development
-
-### Project Structure
-```
-personalized-news-aggregator/
-├── client/                 # Next.js frontend application
-│   ├── src/
-│   │   ├── app/           # App router pages
-│   │   ├── components/    # Reusable UI components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utilities and configurations
-│   │   └── types/         # TypeScript type definitions
-│   └── package.json
-├── server/                # Express.js backend API
-│   ├── src/
-│   │   ├── api/           # API route handlers
-│   │   ├── models/        # Database models
-│   │   ├── middlewares/   # Express middlewares
-│   │   ├── workers/       # Background job workers
-│   │   └── utils/         # Utility functions
-│   └── package.json
-├── ml_inference_service/  # Machine learning microservice
-├── .github/workflows/     # CI/CD pipeline configurations
-└── docker-compose.yml    # Multi-service orchestration
-```
 
 ### Available Scripts
 
@@ -256,23 +155,7 @@ The project includes a comprehensive GitHub Actions pipeline:
 - ✅ Docker image building and pushing
 - ✅ Staging deployment with health checks
 
-## 🔧 Configuration
 
-### Environment Variables
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NODE_ENV` | Application environment | Yes |
-| `MONGODB_URI` | MongoDB connection string | Yes |
-| `REDIS_URL` | Redis connection string | Yes |
-| `JWT_SECRET` | JWT signing secret | Yes |
-| `NEWSAPI_KEY` | News API key | Yes |
-| `SENDGRID_API_KEY` | Email service key | No |
-
-### API Configuration
-- **Rate Limiting**: 100 requests per 15 minutes per IP
-- **CORS**: Configured for cross-origin requests
-- **Security Headers**: Helmet.js for security headers
-- **Request Validation**: Zod schemas for input validation
 
 ## 🤝 Contributing
 
@@ -326,26 +209,6 @@ We welcome contributions! Here's how to get started:
 - XSS protection with content security policies
 - Secure headers with Helmet.js
 
-## 📈 Roadmap
-
-### Phase 1 (Current)
-- ✅ Core news aggregation
-- ✅ User authentication
-- ✅ Basic personalization
-- ✅ Fake news detection
-
-### Phase 2 (Upcoming)
-- 🔄 Advanced ML models
-- 🔄 Social features (sharing, comments)
-- 🔄 Mobile application
-- 🔄 Real-time notifications
-
-### Phase 3 (Future)
-- 📋 Multi-language support
-- 📋 Advanced analytics dashboard
-- 📋 API for third-party integrations
-- 📋 Enterprise features
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -385,25 +248,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **News APIs**: NewsAPI, GNews, The Guardian, Mediastack, Newsdata.io
-- **ML Libraries**: Natural.js, ml-logistic-regression
 - **UI Components**: Radix UI, Lucide Icons
 - **Infrastructure**: Docker, GitHub Actions
 
-## 📞 Support
-
-- **Documentation**: [Wiki](https://github.com/your-username/personalized-news-aggregator/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-username/personalized-news-aggregator/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/personalized-news-aggregator/discussions)
-- **Email**: support@yourproject.com
-
----
-
-<div align="center">
-  <p><strong>Made with ❤️ by the News Aggregator Team</strong></p>
-  <p>
-    <a href="#-features">Features</a> •
-    <a href="#-quick-start">Quick Start</a> •
-    <a href="#-development">Development</a> •
-    <a href="#-contributing">Contributing</a>
-  </p>
-</div>

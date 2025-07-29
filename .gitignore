@@ -38,6 +38,10 @@ ml_inference_service/dist/
 *.csv
 *.tsv
 
+# Large ML data files
+ml_data/fake_news/processed/train_data.json
+ml_data/fake_news/processed/test_data.json
+
 # Misc
 *.swp
 *.swo

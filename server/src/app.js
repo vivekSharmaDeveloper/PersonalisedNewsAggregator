@@ -36,7 +36,10 @@ app.use(helmet({
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'http://localhost:3001',
+    'https://truscan.tech',
+    'https://www.truscan.tech',
+    'http://truscan.tech',
+    'http://www.truscan.tech',
     process.env.CORS_ORIGIN
   ].filter(Boolean),
   credentials: true,

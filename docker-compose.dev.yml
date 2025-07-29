@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: newsagg-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: news-aggregator
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - newsagg-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Redis Cache
+  redis:
+    image: redis:7.0-alpine
+    container_name: newsagg-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - newsagg-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Backend API (simplified for development)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-builder
+    container_name: newsagg-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/news-aggregator?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+      - JWT_SECRET=your-jwt-secret-here
+      - GOOGLECLOUD_APIKEY=${GOOGLECLOUD_APIKEY}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+      - SENDGRID_API_KEY=${EMAIL_PASS}
+    volumes:
+      - ./server:/app/server
+      - /app/server/node_modules
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - newsagg-network
+
+  # ML Inference Service
+  ml-service:
+    build:
+      context: .
+      dockerfile: ml_inference_service/Dockerfile
+    container_name: newsagg-ml-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    volumes:
+      - ./ml_inference_service:/app
+      - ./ml_data:/app/ml_data
+    networks:
+      - newsagg-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Background Workers
+  workers:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-builder
+    container_name: newsagg-workers
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/news-aggregator?authSource=admin
+      - REDIS_URL=redis://:redis123@redis:6379
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+      - GOOGLECLOUD_APIKEY=${GOOGLECLOUD_APIKEY}
+    command: ["node", "runWorkers.js"]
+    volumes:
+      - ./server:/app/server
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - newsagg-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  newsagg-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

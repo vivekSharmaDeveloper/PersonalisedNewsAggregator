@@ -1,0 +1,43 @@
+# Node.js dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads and generated files
+uploads/
+server/uploads/
+client/.next/
+client/out/
+client/dist/
+ml_inference_service/.next/
+ml_inference_service/dist/
+
+# CSV and data files (if not needed in repo)
+*.csv
+*.tsv
+
+# Misc
+*.swp
+*.swo

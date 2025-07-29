@@ -1,0 +1,225 @@
+name: 🔍 Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  # Validate PR Title and Description
+  pr-validation:
+    name: 📝 PR Title & Description Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🔍 Validate PR Title
+      uses: amannn/action-semantic-pull-request@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        types: |
+          feat
+          fix
+          docs
+          style
+          refactor
+          perf
+          test
+          chore
+          ci
+          build
+        requireScope: false
+        
+    - name: 📋 Check PR Description
+      run: |
+        if [ -z "${{ github.event.pull_request.body }}" ]; then
+          echo "❌ PR description is required"
+          exit 1
+        else
+          echo "✅ PR description provided"
+        fi
+
+  # Quick Tests for Fast Feedback
+  quick-tests:
+    name: ⚡ Quick Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🛠️ Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+    
+    - name: 📦 Install Dependencies
+      run: |
+        cd server && npm ci
+        cd ../client && npm ci
+    
+    - name: 🧹 Lint Check
+      run: |
+        cd server && npm run lint
+        cd ../client && npm run lint
+        
+    - name: 🏗️ Build Check
+      run: |
+        cd client && npm run build
+        
+    - name: 🧪 Quick Tests
+      run: |
+        cd server && npm run test:unit
+
+  # Changed Files Analysis
+  changed-files:
+    name: 📊 Analyze Changed Files
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: 🔍 Get Changed Files
+      id: changed-files
+      uses: tj-actions/changed-files@v40
+      with:
+        files_yaml: |
+          backend:
+            - 'server/**'
+          frontend:
+            - 'client/**'
+          config:
+            - '*.json'
+            - '*.yml'
+            - '*.yaml'
+          docs:
+            - '*.md'
+            - 'docs/**'
+            
+    - name: 📊 Report Changes
+      run: |
+        echo "## 📁 Changed Files Summary" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.changed-files.outputs.backend_any_changed }}" == "true" ]; then
+          echo "🔧 **Backend Changes:** Yes" >> $GITHUB_STEP_SUMMARY
+          echo "Files: ${{ steps.changed-files.outputs.backend_all_changed_files }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.changed-files.outputs.frontend_any_changed }}" == "true" ]; then
+          echo "🎨 **Frontend Changes:** Yes" >> $GITHUB_STEP_SUMMARY
+          echo "Files: ${{ steps.changed-files.outputs.frontend_all_changed_files }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.changed-files.outputs.config_any_changed }}" == "true" ]; then
+          echo "⚙️ **Config Changes:** Yes" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.changed-files.outputs.docs_any_changed }}" == "true" ]; then
+          echo "📚 **Documentation Changes:** Yes" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # Security Check for Dependencies
+  security-check:
+    name: 🔒 Security & Dependency Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🛠️ Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        
+    - name: 🔍 Check for Secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+        
+    - name: 🔒 Audit Dependencies (Server)
+      run: |
+        cd server
+        npm audit --audit-level moderate
+        
+    - name: 🔒 Audit Dependencies (Client)
+      run: |
+        cd client
+        npm audit --audit-level moderate
+
+  # Performance Impact Check
+  performance-check:
+    name: ⚡ Performance Impact
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'client/')
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🛠️ Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: client/package-lock.json
+        
+    - name: 📦 Install Dependencies
+      run: |
+        cd client
+        npm ci
+        
+    - name: 🏗️ Build and Analyze Bundle
+      run: |
+        cd client
+        npm run build
+        
+    - name: 📊 Bundle Size Analysis
+      run: |
+        cd client
+        echo "## 📦 Bundle Size Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "Build completed successfully ✅" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -d ".next/static" ]; then
+          echo "**Static Assets:**" >> $GITHUB_STEP_SUMMARY
+          du -sh .next/static/* >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # Code Quality Gates
+  quality-gates:
+    name: 🎯 Quality Gates
+    runs-on: ubuntu-latest
+    needs: [pr-validation, quick-tests, security-check]
+    
+    steps:
+    - name: ✅ All Checks Passed
+      run: |
+        echo "## 🎉 Quality Gates Status" >> $GITHUB_STEP_SUMMARY
+        echo "✅ PR Validation: Passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Quick Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Security Check: Passed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Ready for Review" >> $GITHUB_STEP_SUMMARY
+        
+    - name: 🎯 PR Ready for Review
+      run: |
+        echo "🚀 This PR has passed all quality gates!"
+        echo "📋 Code follows standards"
+        echo "🧪 Tests are passing"
+        echo "🔒 No security issues detected"
+        echo "✨ Ready for human review"

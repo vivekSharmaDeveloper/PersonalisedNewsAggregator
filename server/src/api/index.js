@@ -182,6 +182,7 @@ router.post('/ingest', validate(newsIngestSchema), async (req, res) => {
 router.use('/health', health);
 router.use('/emojis', emojis);
 router.use('/users', users);
+router.use('/articles', articles);
 router.use('/realtime', realtime);
 router.use(analyze);
 

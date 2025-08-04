@@ -52,24 +52,21 @@ const SignupPage = () => {
       return;
     }
     setCheckingUsername(true);
-    fetch(`${API_URL}users/${encodeURIComponent(username)}/preferences`)
-      .then(res => {
-        if (res.status === 404) {
+    fetch(`${API_URL}users/check-username/${encodeURIComponent(username)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.available) {
           setUsernameError('');
           setUsernameSuggestions([]);
-        } else if (res.ok) {
+        } else {
           setUsernameError('Username is already taken.');
           const base = username.replace(/\d+$/, '');
           const suggestions = Array.from({ length: 3 }, (_, i) => base + Math.floor(Math.random() * 10000));
           setUsernameSuggestions(suggestions);
-        } else {
-          // For other errors, treat as available (do not log)
-          setUsernameError('');
-          setUsernameSuggestions([]);
         }
       })
       .catch(() => {
-        // Suppress all errors (including 404) to avoid console clutter
+        // Suppress all errors to avoid console clutter
         setUsernameError('');
         setUsernameSuggestions([]);
       })

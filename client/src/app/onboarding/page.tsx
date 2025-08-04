@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import ThemeToggler from "@/components/ThemeToggler";
 import UserMenu from "@/components/UserMenu";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1/';
+
 const INTEREST_OPTIONS = [
   "Technology", "Science", "Finance", "Environment", "Politics", "Sports", "Health", "Entertainment", "Business", "World", "General"
 ];
@@ -57,7 +59,7 @@ export default function OnboardingPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "users/preferences", {
+      const res = await fetch(`${API_URL}users/preferences`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ interests: selectedInterests, sources: selectedSources, onboarded: true })

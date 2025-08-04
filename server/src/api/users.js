@@ -23,6 +23,29 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
+// GET /api/v1/users/check-username/:username
+router.get('/check-username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const existingUser = await User.findOne({ username });
+    
+    if (existingUser) {
+      return res.status(409).json({ 
+        available: false, 
+        message: 'Username is already taken' 
+      });
+    }
+    
+    res.json({ 
+      available: true, 
+      message: 'Username is available' 
+    });
+  } catch (err) {
+    console.error('Username check error:', err);
+    res.status(500).json({ error: 'Failed to check username availability' });
+  }
+});
+
 // GET /api/v1/users/:username/preferences
 router.get('/:username/preferences', async (req, res) => {
   try {

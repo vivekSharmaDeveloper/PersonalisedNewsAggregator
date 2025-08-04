@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Accessibility, 
+  PersonStanding, 
   Volume2, 
   Eye, 
   Keyboard, 
   Plus, 
   Minus,
-  Settings
+  Settings,
+  ArrowUp
 } from 'lucide-react';
 import { useAccessibility } from '../hooks/useAccessibility';
 import AccessibilityPanel from './AccessibilityPanel';
@@ -105,6 +106,33 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
         </a>
       </div>
 
+      {/* Back to Top Button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="back-to-top"
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 1000,
+          backgroundColor: '#007acc',
+          border: 'none',
+          borderRadius: '20px',
+          padding: '10px 20px',
+          color: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.3s ease',
+        }}
+        title="Back to top"
+      >
+        <ArrowUp size={20} />
+        <span className="ml-2">Top</span>
+      </button>
+
       {/* Accessibility Toolbar */}
       <div 
         className={`accessibility-toolbar ${className}`}
@@ -112,12 +140,12 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
         aria-label="Accessibility controls"
         style={{
           position: 'fixed',
-          top: '20px',
-          right: '20px',
+          bottom: '20px',
+          left: '20px',
           zIndex: 1000,
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           border: '2px solid #007acc',
-          borderRadius: '8px',
+          borderRadius: '50px',
           padding: isExpanded ? '12px' : '8px',
           backdropFilter: 'blur(10px)',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
@@ -136,7 +164,7 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
             background: 'none',
             border: 'none',
             padding: '8px',
-            borderRadius: '4px',
+            borderRadius: '30px',
             cursor: 'pointer',
             color: '#007acc',
             display: 'flex',
@@ -147,7 +175,7 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
           }}
           title="Toggle accessibility controls (Alt+A)"
         >
-          <Accessibility size={24} />
+          <PersonStanding size={24} />
           {isExpanded && <span className="ml-2">Accessibility</span>}
         </button>
 

@@ -55,7 +55,7 @@ export default function BookmarksPage() {
     setLoading(true);
     setFetchError(null);
     // Fetch all articles and filter by bookmarked IDs
-    fetch(`${API_URL}?limit=1000&_=${Date.now()}`)
+    fetch(`${API_URL}articles?limit=1000&_=${Date.now()}`)
       .then(res => {
         if (!res.ok) {
           throw new Error(`Failed to fetch articles: ${res.status}`);

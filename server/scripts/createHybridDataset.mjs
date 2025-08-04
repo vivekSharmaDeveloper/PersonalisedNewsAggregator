@@ -6,7 +6,9 @@ import natural from 'natural';
 const stopwords = natural.stopwords;
 const tokenizer = new natural.WordTokenizer();
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // Use project-wide convention for data directories
 const CSV_DIR = path.join(__dirname, '../../ml_data/fake_news/raw_external_datasets/');
 const OUTPUT_DIR = path.join(__dirname, '../../ml_data/fake_news/processed/');
@@ -98,14 +100,6 @@ function vectorizeText(articles) {
   return { vectors, vocab, idf, tfidfDocuments };
 }
 
-function splitTrainTest(data, testRatio = 0.2) {
-  const shuffled = data.slice().sort(() => Math.random() - 0.5);
-  const testCount = Math.floor(data.length * testRatio);
-  return {
-    train: shuffled.slice(testCount),
-    test: shuffled.slice(0, testCount),
-  };
-}
 
 // Map LIAR label to binary: FAKE (1): 'pants-fire', 'false', 'barely-true'; REAL (0): 'half-true', 'mostly-true', 'true'
 function liarLabelToBinary(label) {
@@ -174,26 +168,6 @@ function loadWelFakeCsv(filePath) {
   });
 }
 
-// Loader for ISOT/other CSVs (binary)
-function loadAndProcessCsv(filePath, label) {
-  return new Promise((resolve, reject) => {
-    const results = [];
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on('data', (row) => {
-        let text = '';
-        if (row.text) text = row.text;
-        else if (row.article_content) text = row.article_content;
-        else if (row.content) text = row.content;
-        if (row.title) text = row.title + ' ' + text;
-        if (text && text.length > 30) {
-          results.push({ text, label });
-        }
-      })
-      .on('end', () => resolve(results))
-      .on('error', reject);
-  });
-}
 
 // Loader for MongoDB (binary, real news)
 async function loadRealNewsFromMongoDB(limit = 5000) {
@@ -212,7 +186,7 @@ async function loadRealNewsFromMongoDB(limit = 5000) {
 }
 
 async function runDataPreparation() {
-  console.log('Loading ISOT, WELFake, LIAR, and MongoDB datasets...');
+  console.log('Loading ISOT, WELFake, LIAR, Train, Test, Valid and MongoDB datasets...');
   const csvFiles = [
     { file: 'Fake.csv', label: 1 },
     { file: 'True.csv', label: 0 },
@@ -241,10 +215,14 @@ async function runDataPreparation() {
       allArticles = allArticles.concat(liarArticles);
     }
   }
-  // Load real news from MongoDB
-  const realNews = await loadRealNewsFromMongoDB(5000);
-  console.log(`Loaded MongoDB: ${realNews.length} articles from MongoDB`);
-  allArticles = allArticles.concat(realNews);
+  // Load real news from MongoDB (optional)
+  try {
+    const realNews = await loadRealNewsFromMongoDB(5000);
+    console.log(`Loaded MongoDB: ${realNews.length} articles from MongoDB`);
+    allArticles = allArticles.concat(realNews);
+  } catch (err) {
+    console.log('MongoDB not available, skipping MongoDB data. Using CSV datasets only.');
+  }
   // Deduplicate
   const beforeDedup = allArticles.length;
   allArticles = removeDuplicates(allArticles);
@@ -253,21 +231,55 @@ async function runDataPreparation() {
   console.log('Preprocessing articles...');
   allArticles.forEach(a => { a.processed = preprocessText(a.text); });
   console.log('Preprocessing complete.');
-  // Vectorize
-  console.log('Vectorizing articles...');
-  const { vectors, vocab, idf, tfidfDocuments } = vectorizeText(allArticles);
-  console.log(`Vectorization complete. Vocab size: ${vocab.length}`);
-  // Stratified split
-  const dataWithLabels = allArticles.map((a, i) => ({ vector: vectors[i], label: a.label }));
-  const { train, test } = splitTrainTest(dataWithLabels);
-  // Save
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'vocabulary.json'), JSON.stringify(vocab));
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'idf.json'), JSON.stringify(idf));
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'train_data.json'), JSON.stringify(train));
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'test_data.json'), JSON.stringify(test));
-  // Save tfidf.documents for future reconstructability
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'tfidf_documents.json'), JSON.stringify(tfidfDocuments));
-  console.log(`Saved: ${train.length} train, ${test.length} test, vocab size: ${vocab.length}`);
+// Vectorize
+function batchVectorize(articles, batchSize = 1000) {
+  console.log('Vectorizing articles in batches...');
+  const tfidf = new natural.TfIdf();
+  const vocabSet = new Set();
+
+  // Process in batches
+  for (let i = 0; i < articles.length; i += batchSize) {
+    const batch = articles.slice(i, i + batchSize);
+    batch.forEach(a =e tfidf.addDocument(a.processed));
+  }
+
+  articles.forEach(a =e {
+    const tokens = tokenizer.tokenize(a.processed);
+    tokens.forEach(token =e {
+      const stemmed = natural.PorterStemmer.stem(token);
+      vocabSet.add(stemmed);
+    });
+  });
+
+  const vocab = Array.from(vocabSet);
+  const vectors = articles.map((a, i) =e vocab.map(term =e tfidf.tfidf(term, i)));
+  const idf = {};
+  vocab.forEach(term =e {
+    idf[term] = tfidf.idf(term);
+  });
+  const tfidfDocuments = tfidf.documents;
+  return { vectors, vocab, idf, tfidfDocuments };
 }
 
-runDataPreparation().catch(console.error); 
+console.log('Vectorizing articles...');
+const { vectors, vocab, idf, tfidfDocuments } = batchVectorize(allArticles);
+console.log(`Vectorization complete. Vocab size: ${vocab.length}`);
+
+// Stratified split
+const dataWithLabels = allArticles.map((a, i) =e ({ vector: vectors[i], label: a.label }));
+const { train, test } = splitTrainTest(dataWithLabels);
+
+// Save
+fs.writeFileSync(path.join(OUTPUT_DIR, 'vocabulary.json'), JSON.stringify(vocab));
+fs.writeFileSync(path.join(OUTPUT_DIR, 'idf.json'), JSON.stringify(idf));
+fs.writeFileSync(path.join(OUTPUT_DIR, 'train_data.json'), JSON.stringify(train));
+fs.writeFileSync(path.join(OUTPUT_DIR, 'test_data.json'), JSON.stringify(test));
+
+const tfidfState = {
+  savedDocuments: tfidfDocuments
+};
+fs.writeFileSync(path.join(OUTPUT_DIR, 'tfidf_state.json'), JSON.stringify(tfidfState));
+console.log(`Saved: ${train.length} train, ${test.length} test, vocab size: ${vocab.length}`);
+}
+
+runDataPreparation().catch(console.error);

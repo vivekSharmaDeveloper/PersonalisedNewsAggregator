@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import UserMenu from '@/components/UserMenu';
 import ThemeToggler from '@/components/ThemeToggler';
 import EmptyState from '@/components/EmptyState';
+import AccessibilityToolbar from '@/components/AccessibilityToolbar';
+import LazyImage from '@/components/LazyImage';
 
 // CRITICAL FIX: Ensure consistency with backend schema and previous discussions
 interface Article {
@@ -151,7 +153,7 @@ const HomePage = () => {
                     params.append('category', selectedCategory);
                 }
 
-                const res = await fetch(`${API_URL}?${params.toString()}`);
+                const res = await fetch(`${API_URL}articles?${params.toString()}`);
                 if (!res.ok) throw new Error('Failed to fetch articles');
                 const data = await res.json();
                 setArticles(data.articles || []);
@@ -410,6 +412,17 @@ const HomePage = () => {
 
     const displayedArticles = uniqueArticles;
 
+    // Helper function to get the currently expanded article for accessibility
+    const getCurrentExpandedArticle = () => {
+        if (!expandedArticleId) return null;
+        const article = articles.find(a => a._id === expandedArticleId);
+        if (!article) return null;
+        return {
+            title: article.title,
+            content: getArticleDisplayContent(article)
+        };
+    };
+
     if (!authChecked) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center">
@@ -421,6 +434,9 @@ const HomePage = () => {
 
     return (
         <>
+            {/* Accessibility Toolbar */}
+            <AccessibilityToolbar currentArticle={getCurrentExpandedArticle()} />
+            
             {/* Top bar with theme toggler and user icon */}
             <div className="flex items-center justify-end gap-3 mb-8 relative">
                 <ThemeToggler />
@@ -431,7 +447,7 @@ const HomePage = () => {
                 {/* Desktop Layout - Single line */}
                 <div className="hidden sm:flex items-center h-full px-4 gap-2">
                     <span className="flex-shrink-0 text-zinc-900 dark:text-white text-lg mr-2">
-                        Filter By <span className="font-semibold">Category</span>:
+                        Filter by <span className="font-semibold">Category</span>:
                     </span>
                     <div className="flex items-center gap-1 flex-1">
                         {orderedCategories.slice(0, 8).map(category => {
@@ -578,7 +594,16 @@ const HomePage = () => {
                                         <h3 className="font-bold bg-blue-100 text-cyan-700 px-2 py-2 rounded mb-2 text-base sm:text-lg dark:bg-zinc-700 dark:text-blue-200 leading-tight">{news.title}</h3>
                                         {/* Article Image */}
                                         {news.urlToImage ? (
-                                            <img src={news.urlToImage} alt={news.title} className="w-full h-40 sm:h-48 object-cover rounded mb-2" />
+                                            <LazyImage 
+                                                src={news.urlToImage} 
+                                                alt={news.title} 
+                                                width={800}
+                                                height={320}
+                                                className="w-full h-40 sm:h-48 rounded mb-2"
+                                                priority={currentPage === 1 && displayedArticles.indexOf(news) < 2}
+                                                quality={75}
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            />
                                         ) : (
                                             <div className="w-full h-40 sm:h-48 bg-zinc-200 flex items-center justify-center rounded mb-2 text-zinc-400 text-xl sm:text-2xl dark:bg-zinc-700">No Image</div>
                                         )}

@@ -2,7 +2,7 @@ const express = require('express');
 const User = require('../models/User');
 const Article = require('../models/Article');
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.EMAIL_PASS);
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const { requireAuth } = require('../middlewares');
 const { validate, sanitize } = require('../middlewares/validation');
 const {
@@ -13,6 +13,11 @@ const {
   userProfileSchema,
   avatarUpdateSchema
 } = require('../validators/schemas');
+const {
+  sendWelcomeEmail,
+  sendForgotPasswordEmail,
+  sendPasswordResetConfirmationEmail
+} = require('../services/emailService');
 const { ValidationError, ConflictError, NotFoundError, AuthenticationError } = require('../errors/AppError');
 const jwt = require('jsonwebtoken');
 
@@ -89,6 +94,9 @@ router.post('/signup', sanitize, validate(signupSchema), async (req, res, next) 
     const user = new User({ fullName, username, email, password });
     await user.save();
     
+    // Send welcome email
+    sendWelcomeEmail(user);
+
     res.status(201).json({ 
       status: 'success',
       message: 'Account created successfully',
@@ -118,16 +126,10 @@ router.post('/forgot-password', sanitize, validate(forgotPasswordSchema), async 
     user.resetPasswordExpires = Date.now() + 1000 * 60 * 60; // 1 hour expiry
     await user.save();
 
-    // Send email via SendGrid
+    // Send email via SendGrid using the email service
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    const msg = {
-      to: user.email,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: 'Password Reset Request',
-      text: `You requested a password reset. Click the link to reset your password: ${resetUrl}`,
-      html: `<p>You requested a password reset.</p><p><a href="${resetUrl}">Reset Password</a></p>`
-    };
-    await sgMail.send(msg);
+    sendForgotPasswordEmail(user, resetUrl);
+
     res.json({ message: 'Password reset email sent' });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -246,6 +248,8 @@ router.post('/reset-password', async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
     console.log('Password reset successful for user:', user.username);
+    // Send password reset confirmation email
+    sendPasswordResetConfirmationEmail(user);
     res.json({ message: 'Password reset successful.' });
   } catch (err) {
     console.error('Failed to reset password:', err);
@@ -274,6 +278,71 @@ router.post('/:username/delete', async (req, res) => {
   if (!isMatch) return res.status(401).json({ error: 'Incorrect password' });
   await user.deleteOne();
   res.json({ message: 'Account deleted successfully' });
+});
+
+// POST /api/v1/users/:username/bookmarks
+router.post('/:username/bookmarks', requireAuth, async (req, res) => {
+  try {
+    const { articleId } = req.body;
+    if (!articleId) {
+      return res.status(400).json({ error: 'Article ID is required' });
+    }
+    
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Check if article is already bookmarked
+    if (user.bookmarks.includes(articleId)) {
+      return res.status(409).json({ error: 'Article already bookmarked' });
+    }
+    
+    // Add bookmark
+    user.bookmarks.push(articleId);
+    await user.save();
+    
+    res.json({ message: 'Article bookmarked successfully', bookmarks: user.bookmarks });
+  } catch (err) {
+    console.error('Bookmark error:', err);
+    res.status(500).json({ error: 'Failed to bookmark article' });
+  }
+});
+
+// DELETE /api/v1/users/:username/bookmarks/:articleId
+router.delete('/:username/bookmarks/:articleId', requireAuth, async (req, res) => {
+  try {
+    const { articleId } = req.params;
+    
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Remove bookmark
+    user.bookmarks = user.bookmarks.filter(id => id !== articleId);
+    await user.save();
+    
+    res.json({ message: 'Bookmark removed successfully', bookmarks: user.bookmarks });
+  } catch (err) {
+    console.error('Remove bookmark error:', err);
+    res.status(500).json({ error: 'Failed to remove bookmark' });
+  }
+});
+
+// GET /api/v1/users/:username/bookmarks
+router.get('/:username/bookmarks', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ bookmarks: user.bookmarks || [] });
+  } catch (err) {
+    console.error('Get bookmarks error:', err);
+    res.status(500).json({ error: 'Failed to get bookmarks' });
+  }
 });
 
 // POST /api/v1/contact

@@ -9,6 +9,7 @@ import ThemeToggler from '@/components/ThemeToggler';
 import { useArticles, useSentimentAnalysis } from '@/hooks/useArticles';
 import { Article, CategoryType } from '@/types';
 import { useToast } from '@/components/ui/toaster';
+import AccessibilityToolbar from '@/components/AccessibilityToolbar';
 
 const CATEGORIES: CategoryType[] = [
   'All',
@@ -387,10 +388,39 @@ const ArticlesPage: React.FC = () => {
     );
   }
 
+  // Helper function to get current article for accessibility
+  const getCurrentExpandedArticle = useCallback(() => {
+    if (!expandedArticleId) return undefined;
+    const article = articles.find(a => a._id === expandedArticleId);
+    if (!article) return undefined;
+    
+    const getArticleDisplayContent = (article: Article): string => {
+      if (article.content && !article.content.includes('ONLY AVAILABLE IN PAID PLANS')) {
+        return article.content;
+      }
+      return article.description || '';
+    };
+    
+    return {
+      title: article.title,
+      content: getArticleDisplayContent(article)
+    };
+  }, [expandedArticleId, articles]);
+
   return (
     <>
+      {/* Accessibility Toolbar */}
+      <AccessibilityToolbar 
+        article={getCurrentExpandedArticle()}
+      />
+      
       {/* Fixed Top Navigation */}
-      <div className="fixed top-0 left-0 w-screen z-30 bg-white dark:bg-zinc-900 shadow-md flex items-center h-20 px-4">
+      <div 
+        id="navigation" 
+        role="navigation" 
+        aria-label="Main navigation"
+        className="fixed top-0 left-0 w-screen z-30 bg-white dark:bg-zinc-900 shadow-md flex items-center h-20 px-4"
+      >
         <span className="flex-shrink-0 text-zinc-900 dark:text-white text-xl mr-2 flex flex-col items-center justify-center leading-tight">
           <span>Filter By</span>
           <span className="text-md font-normal">Category</span>

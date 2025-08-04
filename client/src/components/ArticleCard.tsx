@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOfflineReading } from '../hooks/useOfflineReading';
+import LazyImage from './LazyImage';
 
 interface ArticleCardProps {
   article: {
@@ -48,6 +49,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
 
   return (
     <div className="article-card border rounded p-4 mb-4">
+      {article.urlToImage && (
+        <LazyImage
+          src={article.urlToImage}
+          alt={article.title}
+          width={400}
+          height={200}
+          className="w-full h-48 object-cover rounded mb-3"
+          quality={75}
+          sizes="(max-width: 768px) 100vw, 50vw"
+        />
+      )}
       <h3 className="text-xl font-bold mb-2">{article.title}</h3>
       <p className="text-sm mb-2">{article.description}</p>
       <p className="text-xs text-gray-500">{article.source} - {new Date(article.publishedAt).toLocaleDateString()}</p>

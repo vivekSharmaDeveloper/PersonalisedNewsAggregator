@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema({
   interests: [{ type: String }],
   sources: [{ type: String }], // new field for consistency
   subscribedSources: [{ type: String }], // keep for backward compatibility
+  bookmarks: [{ type: String }], // Array of article IDs that user has bookmarked
   onboarded: { type: Boolean, default: false },
   lastLogin: { type: Date },
   lastLoginLocation: { type: String },

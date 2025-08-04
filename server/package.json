@@ -54,7 +54,7 @@
     "winston": "^3.17.0",
     "youtube-transcript": "^1.2.1",
     "ytdl-core": "^4.11.5",
-    "zod": "^4.0.8"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

@@ -42,7 +42,7 @@
     "jsdom": "^26.1.0",
     "ml-logistic-regression": "^2.0.0",
     "mongodb": "^6.17.0",
-    "mongoose": "^8.16.0",
+    "mongoose": "^8.17.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.1",
     "natural": "^8.1.0",

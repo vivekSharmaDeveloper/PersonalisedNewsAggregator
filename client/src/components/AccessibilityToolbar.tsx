@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   PersonStanding, 
   Volume2, 
-  Eye, 
-  Keyboard, 
+  Eye,
   Plus, 
   Minus,
   Settings,
-  ArrowUp
+  ChevronUp,
 } from 'lucide-react';
 import { useAccessibility } from '../hooks/useAccessibility';
 import AccessibilityPanel from './AccessibilityPanel';
@@ -18,14 +17,17 @@ interface AccessibilityToolbarProps {
     content: string;
   };
   className?: string;
+  showBackToTop?: boolean;
 }
 
 const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({ 
   article, 
-  className = '' 
+  className = '',
+  showBackToTop = true 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
+  const [showBackToTopBtn, setShowBackToTopBtn] = useState(false);
   const {
     ttsStatus,
     readArticle,
@@ -35,6 +37,22 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
     decreaseFontSize,
     preferences
   } = useAccessibility();
+
+  // Listen for scroll events to show/hide back-to-top button at 70% scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const documentHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrollPercent = (scrollTop / documentHeight) * 100;
+      
+      setShowBackToTopBtn(scrollPercent >= 70);
+    };
+
+    if (showBackToTop) {
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [showBackToTop]);
 
   // Listen for keyboard shortcuts
   useEffect(() => {
@@ -107,31 +125,35 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
       </div>
 
       {/* Back to Top Button */}
-      <button
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="back-to-top"
-        style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          zIndex: 1000,
-          backgroundColor: '#007acc',
-          border: 'none',
-          borderRadius: '20px',
-          padding: '10px 20px',
-          color: 'white',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          transition: 'all 0.3s ease',
-        }}
-        title="Back to top"
-      >
-        <ArrowUp size={20} />
-        <span className="ml-2">Top</span>
-      </button>
+      {showBackToTop && showBackToTopBtn && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="back-to-top"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            zIndex: 1000,
+            backgroundColor: '#007acc',
+            border: 'none',
+            borderRadius: '20px',
+            padding: '10px 20px',
+            color: 'white',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            transition: 'all 0.3s ease',
+            opacity: showBackToTopBtn ? 1 : 0,
+            transform: showBackToTopBtn ? 'translateY(0)' : 'translateY(10px)',
+          }}
+          title="Back to top"
+        >
+          <ChevronUp size={20} />
+          <span className="ml-2">Back to Top</span>
+        </button>
+      )}
 
       {/* Accessibility Toolbar */}
       <div 
@@ -145,12 +167,14 @@ const AccessibilityToolbar: React.FC<AccessibilityToolbarProps> = ({
           zIndex: 1000,
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           border: '2px solid #007acc',
-          borderRadius: '50px',
-          padding: isExpanded ? '12px' : '8px',
+          borderRadius: isExpanded ? '16px' : '50px',
+          padding: isExpanded ? '16px' : '8px',
           backdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          transition: 'all 0.3s ease',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           maxWidth: isExpanded ? '320px' : '60px',
+          width: isExpanded ? '320px' : '60px',
+          height: isExpanded ? 'auto' : '60px',
           overflow: 'hidden'
         }}
       >

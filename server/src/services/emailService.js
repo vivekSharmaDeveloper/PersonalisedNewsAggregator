@@ -234,9 +234,71 @@ The NewsHub Team`;
   return sendEmail(user.email, subject, text, html);
 };
 
+const sendContactEmail = (userEmail, userFullName, subject, message) => {
+  const emailSubject = `Contact Form: ${subject}`;
+  const text = `New contact form submission from NewsHub:
+
+From: ${userFullName} (${userEmail})
+Subject: ${subject}
+
+Message:
+${message}
+
+---
+This message was sent through the NewsHub contact form.`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Contact Form Submission</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; }
+        .info-box { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .message-box { background: #fff; padding: 20px; border-radius: 5px; border: 1px solid #ddd; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+        .label { font-weight: bold; color: #667eea; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>📧 New Contact Form Submission</h1>
+        <p>Someone has reached out through NewsHub</p>
+      </div>
+      <div class="content">
+        <div class="info-box">
+          <p><span class="label">From:</span> ${userFullName}</p>
+          <p><span class="label">Email:</span> ${userEmail}</p>
+          <p><span class="label">Subject:</span> ${subject}</p>
+          <p><span class="label">Date:</span> ${new Date().toLocaleString()}</p>
+        </div>
+        
+        <div class="message-box">
+          <h3>Message:</h3>
+          <p style="white-space: pre-wrap;">${message}</p>
+        </div>
+        
+        <p><em>This message was sent through the NewsHub contact form.</em></p>
+      </div>
+      <div class="footer">
+        <p>© 2024 NewsHub. All rights reserved.</p>
+        <p>Contact form notification system</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail('admin@truscan.tech', emailSubject, text, html);
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendForgotPasswordEmail,
   sendPasswordResetConfirmationEmail,
+  sendContactEmail,
 };
 

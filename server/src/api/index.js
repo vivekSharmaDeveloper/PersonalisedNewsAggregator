@@ -11,6 +11,9 @@ const realtime = require('./realtime');
 const newsQueue = require('../queues/newsQueue');
 const { validate } = require('../middlewares/validation');
 const { newsIngestSchema } = require('../validators/schemas');
+const { sendContactEmail } = require('../services/emailService');
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
@@ -175,6 +178,59 @@ router.post('/ingest', validate(newsIngestSchema), async (req, res) => {
       status: 'error',
       message: 'Failed to add job to queue',
       error: error.message 
+    });
+  }
+});
+
+// Contact form endpoint
+router.post('/contact', async (req, res) => {
+  try {
+    const { subject, message } = req.body;
+    
+    // Get authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.substring(7);
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    // Get user details
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Validate input
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Subject and message are required' });
+    }
+
+    if (subject.trim().length === 0 || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Subject and message cannot be empty' });
+    }
+
+    // Send email to admin
+    await sendContactEmail(user.email, user.fullName, subject.trim(), message.trim());
+    
+    console.log(`📧 Contact form submitted by ${user.fullName} (${user.email})`);
+    
+    res.json({ 
+      status: 'success',
+      message: 'Your message has been sent successfully. We will get back to you soon!' 
+    });
+  } catch (error) {
+    console.error('❌ Error processing contact form:', error);
+    res.status(500).json({ 
+      status: 'error',
+      error: 'Failed to send message. Please try again later.' 
     });
   }
 });

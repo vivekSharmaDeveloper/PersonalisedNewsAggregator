@@ -435,7 +435,10 @@ const HomePage = () => {
     return (
         <>
             {/* Accessibility Toolbar */}
-            <AccessibilityToolbar currentArticle={getCurrentExpandedArticle()} />
+            <AccessibilityToolbar 
+                currentArticle={getCurrentExpandedArticle()} 
+                showBackToTop={displayedArticles.length > 0 && !loading && !error}
+            />
             
             {/* Top bar with theme toggler and user icon */}
             <div className="flex items-center justify-end gap-3 mb-8 relative">
@@ -474,7 +477,7 @@ const HomePage = () => {
                             </select>
                         )}
                     </div>
-                    <div className="flex items-center gap-1 ml-2">
+                    <div className="flex items-center gap-3 ml-2">
                         <a href="/check-fake-status"
                             className="px-3 py-2 bg-cyan-600 text-white rounded font-semibold no-underline text-sm flex-shrink-0"
                         >
@@ -535,7 +538,51 @@ const HomePage = () => {
                         <div className="text-lg font-semibold text-zinc-700 dark:text-zinc-200">Loading articles...</div>
                     </div>
                 ) : error ? (
-                    <div className="text-red-600 text-center py-8">{error}</div>
+                    <div className="text-center py-12">
+                        <div className="text-red-600 text-lg mb-4">{error}</div>
+                        <button
+                            onClick={() => {
+                                setLoading(true);
+                                setTimeout(async () => {
+                                    setError('');
+                                    try {
+                                        const params = new URLSearchParams({
+                                            page: currentPage.toString(),
+                                            limit: PAGE_SIZE.toString(),
+                                        });
+                                
+                                        if (selectedCategory === 'All' && userInterests.length > 0) {
+                                            params.append('interests', userInterests.join(','));
+                                        } else if (selectedCategory !== 'All') {
+                                            params.append('category', selectedCategory);
+                                        }
+                                
+                                        const res = await fetch(`${API_URL}articles?${params.toString()}`);
+                                        if (!res.ok) throw new Error('Failed to fetch articles');
+                                        const data = await res.json();
+                                        setArticles(data.articles || []);
+                                        setTotalPages(data.totalPages || 1);
+                                    } catch (err: any) {
+                                        setError(err.message || 'Error fetching articles');
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }, 3000);
+                            }}
+                            disabled={loading}
+                            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {loading ? (
+                                <div className="flex items-center">
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                    Refreshing...
+                                </div>
+                            ) : (
+                                'Refresh'
+                            )}
+                        </button>
+                        <p className="text-zinc-600 dark:text-zinc-400 mt-4">Please try refreshing the page to reload articles</p>
+                    </div>
                 ) : (
                     <div className="news-grid-responsive">
                         {displayedArticles.length === 0 ? (
@@ -688,8 +735,8 @@ const HomePage = () => {
                         )}
                     </div>
                 )}
-                {/* Hide pagination during loading */}
-                {!loading && (
+                {/* Hide pagination during loading, error, or when no articles */}
+                {!loading && !error && displayedArticles.length > 0 && (
                     <div className="mt-6 text-center mb-8 px-2">
                         {(() => {
                             const maxPagesToShow = (typeof window !== 'undefined' && window.innerWidth < 640) ? 3 : 5; // Show fewer pages on mobile

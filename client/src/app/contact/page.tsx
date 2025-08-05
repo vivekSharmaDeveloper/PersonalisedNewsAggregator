@@ -31,14 +31,25 @@ export default function ContactPage() {
     }
     setLoading(true);
     try {
+      // Get the authentication token
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        setError("Authentication required. Please log in again.");
+        router.replace('/login');
+        return;
+      }
+
       const res = await fetch(`${API_URL}contact`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ subject, message }),
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccess("Your message has been sent! We'll get back to you soon.");
+        setSuccess(data.message || "Your message has been sent! We'll get back to you soon.");
         setSubject("");
         setMessage("");
       } else {

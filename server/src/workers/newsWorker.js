@@ -23,8 +23,9 @@ const GUARDIAN_URL = `https://content.guardianapis.com/search?api-key=${GUARDIAN
 const NEWSDATA_KEY = process.env.NEWSDATA_KEY;
 const NEWSDATA_URL = `https://newsdata.io/api/1/news?apikey=${NEWSDATA_KEY}&country=us&language=en`;
 
-const API_SENTIMENT_URL = process.env.SENTIMENT_API_URL || 'http://localhost:5000/api/v1/analyze-sentiment';
-const API_FAKE_NEWS_URL = 'http://localhost:3001/detect-fake-news';
+const ML_SERVICE_ENABLED = process.env.ML_SERVICE_ENABLED === 'true';
+const API_SENTIMENT_URL = process.env.ML_SENTIMENT_URL || 'http://localhost:5000/api/v1/analyze-sentiment';
+const API_FAKE_NEWS_URL = process.env.ML_FAKE_NEWS_URL || 'http://localhost:3001/detect-fake-news';
 
 // News fetching functions (copied from newsIngest.js)
 async function fetchNewsAPI() {
@@ -213,20 +214,34 @@ async function ingestNewsJob(job) {
         const existingArticle = await Article.findOne({ url: article.url });
         const isNewArticle = !existingArticle;
         
-        // Call ML service for sentiment analysis
-        const sentiment = await getSentimentFromService(article.description || article.content || article.title || '');
-        if (sentiment) {
-          article.sentimentScore = sentiment.score;
-          article.sentimentLabel = sentiment.label;
+        // Call ML service for sentiment analysis (only if enabled)
+        if (ML_SERVICE_ENABLED) {
+          const sentiment = await getSentimentFromService(article.description || article.content || article.title || '');
+          if (sentiment) {
+            article.sentimentScore = sentiment.score;
+            article.sentimentLabel = sentiment.label;
+          }
         }
 
-        // Call ML service for fake news detection
-        const fakeResult = await getFakeNewsClassification(
-          [article.title, article.description, article.content].filter(Boolean).join(' ')
-        );
-        if (fakeResult) {
-          article.isFake = fakeResult.label === 1;
-          article.fakeProbability = fakeResult.probability;
+        // Call ML service for fake news detection (only if enabled)
+        if (ML_SERVICE_ENABLED) {
+          const fakeResult = await getFakeNewsClassification(
+            [article.title, article.description, article.content].filter(Boolean).join(' ')
+          );
+          if (fakeResult) {
+            article.isFake = fakeResult.label === 1;
+            article.fakeProbability = fakeResult.probability;
+            article.classificationTimestamp = new Date();
+          } else {
+            // Fallback when ML service fails
+            article.isFake = false;
+            article.fakeProbability = 0.5;
+            article.classificationTimestamp = new Date();
+          }
+        } else {
+          // Default values when ML service is disabled
+          article.isFake = false;
+          article.fakeProbability = 0.5;
           article.classificationTimestamp = new Date();
         }
 

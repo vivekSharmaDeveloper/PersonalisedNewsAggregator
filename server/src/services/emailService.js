@@ -5,7 +5,10 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const sendEmail = async (to, subject, text, html) => {
   const msg = {
     to,
-    from: process.env.SENDGRID_FROM_EMAIL,
+    from: {
+      email: process.env.SENDGRID_FROM_EMAIL,
+      name: process.env.SENDGRID_FROM_NAME || 'TruScan News'
+    },
     subject,
     text,
     html,
@@ -292,7 +295,9 @@ This message was sent through the NewsHub contact form.`;
     </html>
   `;
 
-  return sendEmail('admin@truscan.tech', emailSubject, text, html);
+  // Send to the admin email specified in environment variables
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.SENDGRID_FROM_EMAIL;
+  return sendEmail(adminEmail, emailSubject, text, html);
 };
 
 module.exports = {

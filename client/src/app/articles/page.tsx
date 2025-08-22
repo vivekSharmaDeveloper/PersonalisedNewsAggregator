@@ -212,15 +212,26 @@ const HomePage = () => {
     }, [dropdownOpen]);
 
     function FakeNewsBadge({ isFake, fakeProbability }: { isFake?: boolean; fakeProbability?: number }) {
-        if (isFake === true)
+        // Handle the case when ML service is disabled - show as verified when fakeProbability is 0.5 (neutral)
+        if (isFake === true) {
             return <span style={{ background: '#ffeaea', color: '#d32f2f', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
                 Fake News{typeof fakeProbability === 'number' ? ` (${(fakeProbability * 100).toFixed(1)}%)` : ''}
             </span>;
-        if (isFake === false)
+        }
+        
+        if (isFake === false) {
+            // When ML service is disabled, show as "Verified" instead of showing probability
+            if (fakeProbability === 0.5) {
+                return <span style={{ background: '#e3f2fd', color: '#1976d2', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
+                    Verified Source
+                </span>;
+            }
             return <span style={{ background: '#eaffea', color: '#388e3c', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
                 Real News{typeof fakeProbability === 'number' ? ` (${(fakeProbability * 100).toFixed(1)}%)` : ''}
             </span>;
-        return <span style={{ background: '#f0f0f0', color: '#888', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: 13 }}>Unclassified</span>;
+        }
+        
+        return <span style={{ background: '#fff3e0', color: '#f57c00', padding: '2px 8px', borderRadius: 6, fontWeight: 600, fontSize: 13 }}>Pending Review</span>;
     }
 
     function getArticleDisplayContent(article: Article): string {

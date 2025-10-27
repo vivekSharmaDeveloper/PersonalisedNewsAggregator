@@ -122,7 +122,7 @@ jobs:
         name: backend-coverage
         
     - name: 💾 Archive Test Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: backend-test-results
@@ -163,7 +163,7 @@ jobs:
         ls -la .next/static/ || echo "Next.js build completed"
         
     - name: 💾 Archive Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v5
       with:
         name: client-build
         path: client/.next/
